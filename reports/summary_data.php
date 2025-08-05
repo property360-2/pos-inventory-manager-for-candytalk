@@ -33,30 +33,49 @@ if ($date_from && $date_to) {
     $date_to = date('Y-m-d', $to);
 }
 
-// Sales & Revenue (filtered last 30 days)
+// Build dynamic sales query
+$where = "sale_date BETWEEN ? AND ?";
+$params = [$date_from . ' 00:00:00', $date_to . ' 23:59:59'];
+
+if ($product_id) {
+    $where .= " AND sale_id IN (SELECT sale_id FROM sale_items WHERE product_id = ?)";
+    $params[] = $product_id;
+}
+if ($user_id) {
+    $where .= " AND user_id = ?";
+    $params[] = $user_id;
+}
+
+$sql = "SELECT DATE(sale_date) as sale_day, COUNT(*) as count, COALESCE(SUM(total_amount), 0) as revenue
+        FROM sales
+        WHERE $where
+        GROUP BY sale_day
+        ORDER BY sale_day ASC";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Prepare chart data (fill missing days)
 $salesLabels = [];
 $salesCounts = [];
 $salesRevenue = [];
-for ($i = 0; $i < 30; $i++) {
-    $date = date('Y-m-d', strtotime($date_from . "+$i days"));
-    if ($date > $date_to) break;
-    $salesLabels[] = date('M j', strtotime($date));
-    $where = 'DATE(sale_date) = ?';
-    $params = [$date];
-    if ($product_id) {
-        $where .= ' AND sale_id IN (SELECT sale_id FROM sale_items WHERE product_id = ?)';
-        $params[] = $product_id;
-    }
-    if ($user_id) {
-        $where .= ' AND user_id = ?';
-        $params[] = $user_id;
-    }
-    $stmt = $pdo->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_amount),0) as revenue FROM sales WHERE $where");
-    $stmt->execute($params);
-    $row = $stmt->fetch();
-    $salesCounts[] = (int)$row['count'];
-    $salesRevenue[] = (float)$row['revenue'];
+
+$existing = [];
+foreach ($results as $row) {
+    $existing[$row['sale_day']] = $row;
 }
+
+$from = strtotime($date_from);
+$to = strtotime($date_to);
+for ($d = $from; $d <= $to; $d += 86400) {
+    $day = date('Y-m-d', $d);
+    $label = date('M j', $d);
+    $salesLabels[] = $label;
+    $salesCounts[] = isset($existing[$day]) ? (int)$existing[$day]['count'] : 0;
+    $salesRevenue[] = isset($existing[$day]) ? (float)$existing[$day]['revenue'] : 0;
+}
+
 
 // Top 5 selling products (by quantity sold, filtered by date/user)
 $where = '1=1';

@@ -151,6 +151,10 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
         .content-wrapper {
             padding: 2rem;
         }
+
+        .header-4 {
+            margin: 0 10px;
+        }
         
         @media (max-width: 768px) {
             .sidebar {
@@ -162,7 +166,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
             }
             
             .main-content {
-                margin-left: 0;
+                margin: 0 10px;
             }
             
             .sidebar-toggle {
@@ -207,12 +211,12 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                 <button class="sidebar-toggle me-3" id="sidebar-toggle" aria-label="Toggle Sidebar">
                     <i class="fas fa-bars"></i>
                 </button>
-                <h4 class="mb-0"><?php echo isset($page_title) ? $page_title : 'Dashboard'; ?></h4>
+                <h4 class="mb-0 header-4"><?php echo isset($page_title) ? $page_title : 'Dashboard  '; ?></h4>
             </div>
             
             <div class="user-info">
                 <div class="d-none d-md-block">
-                    <small class="text-muted">Welcome,</small><br>
+                    <small class="text-muted">Welcome, </small><br>
                     <strong><?php echo htmlspecialchars($_SESSION['name']); ?></strong>
                     <span class="badge bg-<?php echo $_SESSION['role'] == 'Admin' ? 'danger' : 'primary'; ?> ms-2">
                         <?php echo $_SESSION['role']; ?>
